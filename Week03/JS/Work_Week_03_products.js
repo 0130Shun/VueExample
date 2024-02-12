@@ -8,10 +8,11 @@ createApp({
             apiPath:'_shun0130',
             products:[],
             tempProduct:{
-                imageUrl:''
+                imageUrl:[]
             },
             modalProduct:null,
             modalDel:null,
+            //判斷
             isNew:false,
         };
     },
@@ -21,7 +22,6 @@ createApp({
         checkAdmin(){
             axios.post(`${this.apiUrl}/api/user/check`)
             .then((res)=>{
-                console.log('登入成功');
                 this.getData();
             })
             .catch((error)=>{
@@ -32,9 +32,7 @@ createApp({
         getData(){
             axios.get(`${this.apiUrl}/api/${this.apiPath}/admin/products`)
             .then((res)=>{
-                console.log(res);
                 this.products = res.data.products;
-                console.log(this.products);
             })
             .catch((error)=>{
                 console.dir(error);
@@ -49,30 +47,55 @@ createApp({
                 this.modalProduct.show();
             }else if(status === 'edit'){
                 this.tempProduct = { ...item };
+                if(!Array.isArray(this.tempProduct.imagesUrl)){
+                    this.tempProduct.imagesUrl = [];
+                }
                 this.isNew = false;
                 this.modalProduct.show();
+            }else if(status === 'delete'){
+                this.tempProduct = { ...item };
+                this.modalDel.show();
             }
         },
         //新增資料
         updateProduct(){
-            //更新
+            //新增
+            let api = `${this.apiUrl}/api/${this.apiPath}/admin/product`;
+            let method = 'post';
+            //修改資料
             if(!this.isNew){
-                
+                api = `${this.apiUrl}/api/${this.apiPath}/admin/product/${this.tempProduct.id}`
+                method = 'put';
             }
-
-            axios.post(`${this.apiUrl}/api/${this.apiPath}/admin/product`,{data: this.tempProduct})
+            axios[method](api,{data: this.tempProduct})
             .then((res)=>{
-                console.log(res);
+                //重新更新列表
                 this.getData();
+                //關閉彈掉視窗
                 this.modalProduct.hide();
+                //新增完資料後清除
                 this.tempProduct = {};
             })
             .catch((error)=>{
                 console.dir(error);
             })
-        }    
-        //修改資料
-        
+        },
+        //刪除資料
+        deleteProduct(){
+            const api = `${this.apiUrl}/api/${this.apiPath}/admin/product/${this.tempProduct.id}`;
+            axios.delete(api,{data: this.tempProduct})
+            .then((res)=>{
+                //重新更新列表
+                this.getData();
+                //關閉彈掉視窗
+                this.modalDel.hide();
+                //新增完資料後清除
+                this.tempProduct = {};
+            })
+            .catch((error)=>{
+                console.dir(error);
+            })
+        }  
     },
     //生命週期
     mounted(){
@@ -82,10 +105,8 @@ createApp({
         axios.defaults.headers.common['Authorization'] = token;
         //執行checkAdmin方法
         this.checkAdmin();
-        console.log(token);
-        console.log(this.$refs);
         //new...>建立實體
         this.modalProduct = new bootstrap.Modal(this.$refs.productModal);
-        
+        this.modalDel = new bootstrap.Modal(this.$refs.delProductModal);
     }
 }).mount('#app');
